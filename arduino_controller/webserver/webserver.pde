@@ -19,20 +19,23 @@
 #include <Ethernet.h>
 #include <stdio.h>
 #include <stdlib.h> 
-
-#define PIN_BLUE 3
-#define PIN_RED 5
-#define PIN_GREEN 6
+#include <LiquidCrystal.h>
 
 
-#define PIN_ENTRADA_NIVEL_B 31
-#define PIN_ENTRADA_NIVEL_A 33
+#define PIN_BLUE 7
+#define PIN_RED 8
+#define PIN_GREEN 9
+
+#define PIN_SAIDA_BOMBA 31
+#define PIN_SAIDA_TERMO 33
+#define PIN_SAIDA_AUX1 35
+#define PIN_SAIDA_AUX2 37
 
 
-#define PIN_SAIDA_BOMBA 35
-#define PIN_SAIDA_TERMO 37
-#define PIN_SAIDA_AUX1 39
-#define PIN_SAIDA_AUX2 41
+#define PIN_ENTRADA_NIVEL_B 39
+#define PIN_ENTRADA_NIVEL_A 41
+
+#define PIN_ENTRADA_TEMP 0
 
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -49,11 +52,15 @@ boolean inicioComando1;
 boolean inicioComando2;
 boolean fimComando;
 int indiceentrada;
+
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
 void setup()
 {
   
   pinMode(PIN_ENTRADA_NIVEL_B, INPUT);
   pinMode(PIN_ENTRADA_NIVEL_A, INPUT);
+ // pinMode(PIN_ENTRADA_TEMP, INPUT);
   
   pinMode(PIN_SAIDA_BOMBA, OUTPUT);     
   pinMode(PIN_SAIDA_TERMO, OUTPUT);     
@@ -72,12 +79,19 @@ void setup()
   inicioComando2 = false;
   fimComando = false;
   indiceentrada = 0;
+  
+  
+  lcd.begin(16, 2);
+  lcd.print("Aquarinium!");
+  lcd.setCursor(0, 1);
+  lcd.print("Aguardando Dados!");
  
 }
 
 void loop()
 {
   AguardaComandosWEB(); 
+   LerTemperatura();
 }
 
 void AguardaComandosWEB()
@@ -139,33 +153,36 @@ void DisparaComando()
     {
        DisparaLuz();      
     }       
+    else if (comando[0] == 'S')
+    {
+       DisparaSaida();      
+    }
 }
 
 
 void DisparaLuz()
 {
-    int nivel = 0;
-    
-    char nivelaux[3];
-    nivelaux[0] = comando[2];
-    nivelaux[1] = comando[3];
-    nivelaux[2] = comando[4];
-    nivel = atoi(nivelaux);    
-     
+  int nivel = 0;
+  
+  char nivelaux[3];
+  nivelaux[0] = comando[2];
+  nivelaux[1] = comando[3];
+  nivelaux[2] = comando[4];
+  nivel = atoi(nivelaux);    
+   
   char pin =  comando[1];   
   switch (pin) {
-     case 'R':
-	 analogWrite(PIN_RED, nivel);
-	 break;
-     case 'G':
-	 analogWrite(PIN_GREEN, nivel);
-	 break;
-     case 'B':
-	 analogWrite(PIN_BLUE, nivel);
-	 break;    
-     }
- }
-
+   case 'R':
+  	 analogWrite(PIN_RED, nivel);
+  	 break;
+   case 'G':
+  	 analogWrite(PIN_GREEN, nivel);
+  	 break;
+   case 'B':
+  	 analogWrite(PIN_BLUE, nivel);
+  	 break;    
+   }
+}
 
 
 void DisparaSaida()
@@ -182,32 +199,36 @@ void DisparaSaida()
     char pin =  comando[1];
        
   switch (pin) {
-     case '0':
-	 digitalWrite(0, nivel);
-	 break;
+    
      case '1':
-	 digitalWrite(1, nivel);
+	 digitalWrite(PIN_SAIDA_BOMBA, nivel);
 	 break;
      case '2':
-	 digitalWrite(2, nivel);
+	 digitalWrite(PIN_SAIDA_TERMO, nivel);
 	 break;
      case '3':
-	 digitalWrite(3, nivel);
+	 digitalWrite(PIN_SAIDA_AUX1, nivel);
 	 break;
      case '4':
-	 digitalWrite(4, nivel);
+	 digitalWrite(PIN_SAIDA_AUX2, nivel);
 	 break;
-     case '5':
-	 digitalWrite(5, nivel);
-	 break;
-     case '6':
-	 digitalWrite(6, nivel);
-	 break;
-     case '7':
-	 digitalWrite(7, nivel);
-	 break;
-     }
+     }  
  }
+
+void LerTemperatura()
+{
+  
+int pinoSensor = 10; 
+int valorLido = 0; 
+float temperatura = 0;                        //wait one second before sending new data
+valorLido = analogRead(pinoSensor); 
+temperatura = (valorLido * 0.00488); 
+temperatura = temperatura * 100; 
+Serial.print("Temperatura actual: "); 
+Serial.println(temperatura); 
+delay(1000); 
+}
+
 
 void Header(Client client)
 {
