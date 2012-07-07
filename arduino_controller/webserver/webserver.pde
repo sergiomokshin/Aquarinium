@@ -12,14 +12,19 @@
  
  ILR1
  ILR0
-
-
+ 
 LCD RS pin to digital pin 12
 LCD Enable pin to digital pin 11
 LCD D4 pin to digital pin 5
 LCD D5 pin to digital pin 4
 LCD D6 pin to digital pin 3
 LCD D7 pin to digital pin 2
+ 
+ 
+byte rowPins[ROWS] = {32, 22, 24, 28}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {30, 34, 26}; //connect to the column pinouts of the keypad
+
+ 
  
  */
 #define BUFSIZ 100
@@ -28,7 +33,7 @@ LCD D7 pin to digital pin 2
 #include <stdio.h>
 #include <stdlib.h> 
 #include <LiquidCrystal.h>
-
+#include <Keypad.h>
 
 #define PIN_BLUE 7
 #define PIN_RED 8
@@ -45,6 +50,18 @@ LCD D7 pin to digital pin 2
 
 #define PIN_ENTRADA_TEMP 0
 
+const byte ROWS = 4; //four rows
+const byte COLS = 3; //three columns
+char keys[ROWS][COLS] = {
+  {'1','2','3'},
+  {'4','5','6'},
+  {'7','8','9'},
+  {'#','0','*'}
+};
+byte rowPins[ROWS] = {32, 22, 24, 28}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {30, 34, 26}; //connect to the column pinouts of the keypad
+
+Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 byte ip[] = { 192,168,1, 70 };
@@ -53,18 +70,24 @@ char entradas [] = {'E','0','0','0','0','0','0','0','0'};
 Server server(80);
 char clientline[BUFSIZ];
 char comando[BUFSIZ];
+char comando_teclado[BUFSIZ];
 int index;
 int tamanhocomando;
 
 boolean inicioComando1;
 boolean inicioComando2;
+boolean inicioFuncaoTeclado;
+boolean inicioComandoTeclado;
 boolean fimComando;
+boolean recebendoComandoWeb;
 int indiceentrada;
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
 void setup()
 {
+  
+  Serial.begin(9600);
   
   pinMode(PIN_ENTRADA_NIVEL_B, INPUT);
   pinMode(PIN_ENTRADA_NIVEL_A, INPUT);
@@ -84,13 +107,16 @@ void setup()
   Ethernet.begin(mac, ip);
   server.begin();
   inicioComando1 = false;
+  inicioFuncaoTeclado = false;
+  inicioComandoTeclado = false;
   inicioComando2 = false;
   fimComando = false;
+  recebendoComandoWeb = false;
   indiceentrada = 0;
   
   
-  lcd.begin(16, 2);
-  lcd.print("Aquarinium!");
+  lcd.begin(20, 4);
+  lcd.print("     AQUARINIUM     ");
   lcd.setCursor(0, 1);
   lcd.print("Aguardando Dados!");
  
@@ -98,20 +124,188 @@ void setup()
 
 void loop()
 {
+   
+ 
+  AguardaComandosTeclado();
   AguardaComandosWEB(); 
-   LerTemperatura();
+  //LerTemperatura();          
 }
 
+void AguardaComandosTeclado()
+{   
+  char key = keypad.getKey();
+  if (key != NO_KEY){    
+    lcd.setCursor(0, 1);
+    lcd.print("Selecione uma funcao"); 
+    lcd.setCursor(0, 2); 
+ 
+ 
+   Serial.print("KEY: ");
+   Serial.println(key);
+
+   
+ 
+   if( inicioComandoTeclado == true )
+   {          
+     Serial.println("Executado comando");
+     
+     if(key == '#')
+     {
+        ComandoCancelado();
+        Serial.println("Comando Cancelado");
+     }
+     else if (key == '*')
+     {
+         index++;
+         clientline[index] = 'F';
+        // clientline[index] = 0; 
+         Serial.println(clientline);
+         DisparaComando();
+         ComandoExecutado();
+         Serial.println("Comando Executado");
+         Serial.println(clientline);
+     }
+     else
+     {    
+       index++;
+       clientline[index] = key;   
+       Serial.print("Armazenando buffer: ");
+       Serial.println(key);
+       Serial.println(clientline);
+       
+     }
+     
+     
+   }   
+   else 
+   {             
+      inicioComandoTeclado = true;   
+      index = 0;
+      tamanhocomando = 0;
+       memset( &clientline, 0, BUFSIZ ); //clear inString memory 
+       
+       Serial.println("Executado menu");
+        inicioFuncaoTeclado = true;
+        switch (key) {
+         case '1':
+               clientline[index] = 'I';
+               index++;
+               clientline[index] = 'L';
+               index++;
+               clientline[index] = 'R';      
+               lcd.print("Luz Vermelha 0..250 ");        
+               break;
+         case '2':
+              clientline[index] = 'I';         
+              index++;
+              clientline[index] = 'L';
+              index++;
+              clientline[index] = 'G';
+              lcd.print("Luz Verde 0..250    ");
+              break;
+         case '3':
+              clientline[index] = 'I';         
+              index++;
+              clientline[index] = 'L';
+              index++;
+              clientline[index] = 'B';                           
+              lcd.print("Luz Azul 0..250     ");
+              break;
+          case '4':
+              clientline[index] = 'I';
+              index++;
+              clientline[index] = 'S';
+              index++;
+              clientline[index] = '4';                           
+              lcd.print("Bomba 0:ON = 1:OFF  ");
+              break;
+          case '5':
+              clientline[index] = 'I';         
+              index++;
+              clientline[index] = 'S';
+              index++;
+              clientline[index] = '3';                           
+              break;
+              lcd.print("Termo 0:ON = 1':OFF  ");      
+          case '6':
+              clientline[index] = 'I';         
+              index++;
+              clientline[index] = 'S';
+              index++;
+              clientline[index] = '2'; 
+              lcd.print("Saida1 1:ON = 0:OFF ");
+              break;
+          case '7':
+              clientline[index] = 'I';         
+              index++;
+              clientline[index] = 'S';
+              index++;
+              clientline[index] = '1';   
+              lcd.print("Saida2 1:ON = 0:OFF ");
+              break;
+          case '8':
+              lcd.print("Manual 1:ON = 0:OFF ");
+        	 break;
+          case '0':
+              lcd.print("Auto 1:ON = 0:OFF   ");
+        	 break;    
+          case '#':
+              ComandoCancelado();
+              break;  
+          case '*':             
+              ComandoCancelado();
+              break;   
+         }      
+   }  
+  }  
+}
+
+void ComandoCancelado()
+{
+    lcd.setCursor(0, 1); 
+    lcd.print("Comando cancelado   ");
+
+    lcd.setCursor(0, 2);     
+    lcd.print("                    ");
+    
+    lcd.setCursor(0, 2);     
+    lcd.print("                    ");
+    inicioFuncaoTeclado = false;
+    inicioComandoTeclado = false;
+  
+}
+
+
+void ComandoExecutado()
+{
+    lcd.setCursor(0, 1); 
+    lcd.print("Comando executado   ");
+
+    lcd.setCursor(0, 2);     
+    lcd.print("                    ");
+    
+    lcd.setCursor(0, 2);     
+    lcd.print("                    ");
+    inicioFuncaoTeclado = false;
+    inicioComandoTeclado = false; 
+  
+}
 void AguardaComandosWEB()
 {   
-  index = 0;
-  tamanhocomando = 0;
+  recebendoComandoWeb = false;   
   Client client = server.available();
-  if (client) {  
-    boolean currentLineIsBlank = true;
-    memset( &clientline, 0, BUFSIZ ); //clear inString memory
+  
+  if (client) {         
     while (client.connected()) {
-      if (client.available()) {
+      if (client.available()) {        
+        if (recebendoComandoWeb == false) 
+        {
+          index = 0;
+          tamanhocomando = 0;
+          boolean currentLineIsBlank = true;    
+          memset( &clientline, 0, BUFSIZ ); //clear inString memory      
+          recebendoComandoWeb = true;
+        }
         
         char c = client.read();        
         if (c != '\n' && c != '\r') {
@@ -157,6 +351,14 @@ void DisparaComando()
     }                
 
     comando[index] = 0;      
+    
+    lcd.setCursor(0, 3);    
+    lcd.print(comando);
+
+
+    Serial.print("Tipo Comando: ");
+    Serial.println(comando[0]);
+
     if (comando[0] == 'L')
     {
        DisparaLuz();      
@@ -234,7 +436,7 @@ temperatura = (valorLido * 0.00488);
 temperatura = temperatura * 100; 
 Serial.print("Temperatura actual: "); 
 Serial.println(temperatura); 
-delay(1000); 
+
 }
 
 
