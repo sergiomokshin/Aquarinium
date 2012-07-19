@@ -226,7 +226,7 @@ void AguardaComandosTeclado()
               index++;
               clientline[index] = '3';                           
               break;
-              lcd.print("Termo 0:ON = 1':OFF  ");      
+              lcd.print("Termo 0:ON = 1:OFF  ");      
           case '6':
               clientline[index] = 'I';         
               index++;
