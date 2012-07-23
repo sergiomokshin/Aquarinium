@@ -34,6 +34,7 @@ byte colPins[COLS] = {30, 34, 26}; //connect to the column pinouts of the keypad
 #include <stdlib.h> 
 #include <LiquidCrystal.h>
 #include <Keypad.h>
+#include <Wire.h>  
 
 #define PIN_BLUE 7
 #define PIN_RED 8
@@ -44,11 +45,23 @@ byte colPins[COLS] = {30, 34, 26}; //connect to the column pinouts of the keypad
 #define PIN_SAIDA_AUX1 35
 #define PIN_SAIDA_AUX2 37
 
+#define PIN_SAIDA_BUZZ 41
+
 
 #define PIN_ENTRADA_NIVEL_B 39
 #define PIN_ENTRADA_NIVEL_A 41
 
 #define PIN_ENTRADA_TEMP 0
+
+
+#define HORAS 2
+#define MINUTOS 1
+#define SEGUNDOS 0   
+#define DIASEMANA 3
+#define DIAMES 4  
+#define MES 5 
+#define ANO 6 
+
 
 const byte ROWS = 4; //four rows
 const byte COLS = 3; //three columns
@@ -88,6 +101,8 @@ void setup()
 {
   
   Serial.begin(9600);
+  Wire.begin(); 
+  //ds1307setup();
   
   pinMode(PIN_ENTRADA_NIVEL_B, INPUT);
   pinMode(PIN_ENTRADA_NIVEL_A, INPUT);
@@ -97,11 +112,14 @@ void setup()
   pinMode(PIN_SAIDA_TERMO, OUTPUT);     
   pinMode(PIN_SAIDA_AUX1, OUTPUT);     
   pinMode(PIN_SAIDA_AUX2, OUTPUT);     
+  pinMode(PIN_SAIDA_BUZZ, OUTPUT);     
+  
 
   digitalWrite(PIN_SAIDA_BOMBA, LOW);
   digitalWrite(PIN_SAIDA_TERMO, LOW);
   digitalWrite(PIN_SAIDA_AUX1, LOW);
   digitalWrite(PIN_SAIDA_AUX2, LOW);
+  digitalWrite(PIN_SAIDA_BUZZ, LOW);
  
   Serial.begin(9600);
   Ethernet.begin(mac, ip);
@@ -116,29 +134,52 @@ void setup()
   
   
   lcd.begin(20, 4);
-  lcd.print("     AQUARINIUM     ");
+  lcd.print("AQUARINIUM       A26");
   lcd.setCursor(0, 1);
-  lcd.print("Aguardando Dados!");
+  lcd.print("Selecione uma opcao ");
+  BuzzerConfirma();
+  
+  
+
+
  
 }
 
 void loop()
 {
    
- 
+  PrintData();
   AguardaComandosTeclado();
   AguardaComandosWEB(); 
   //LerTemperatura();          
+}
+
+void BuzzerConfirma()
+{
+  buzz(PIN_SAIDA_BUZZ, 3000, 100);        
+  buzz(PIN_SAIDA_BUZZ, 2500, 30);        
+  buzz(PIN_SAIDA_BUZZ, 3500, 500);        
+}
+
+void BuzzerClica()
+{
+  buzz(PIN_SAIDA_BUZZ, 3500, 100);    
+}
+
+void BuzzerCancela()
+{
+  buzz(PIN_SAIDA_BUZZ, 3500, 500);        
 }
 
 void AguardaComandosTeclado()
 {   
   char key = keypad.getKey();
   if (key != NO_KEY){    
+    BuzzerClica();
     lcd.setCursor(0, 1);
     lcd.print("Selecione uma funcao"); 
     lcd.setCursor(0, 2); 
- 
+    
  
    Serial.print("KEY: ");
    Serial.println(key);
@@ -151,6 +192,7 @@ void AguardaComandosTeclado()
      
      if(key == '#')
      {
+        BuzzerCancela();
         ComandoCancelado();
         Serial.println("Comando Cancelado");
      }
@@ -164,6 +206,7 @@ void AguardaComandosTeclado()
          ComandoExecutado();
          Serial.println("Comando Executado");
          Serial.println(clientline);
+         BuzzerConfirma();
      }
      else
      {    
@@ -217,7 +260,7 @@ void AguardaComandosTeclado()
               clientline[index] = 'S';
               index++;
               clientline[index] = '4';                           
-              lcd.print("Bomba 0:ON = 1:OFF  ");
+              lcd.print("Bomba 1:ON = 0:OFF  ");
               break;
           case '5':
               clientline[index] = 'I';         
@@ -225,8 +268,8 @@ void AguardaComandosTeclado()
               clientline[index] = 'S';
               index++;
               clientline[index] = '3';                           
+              lcd.print("Termo 1:ON = 0:OFF  ");      
               break;
-              lcd.print("Termo 0:ON = 1:OFF  ");      
           case '6':
               clientline[index] = 'I';         
               index++;
@@ -245,10 +288,10 @@ void AguardaComandosTeclado()
               break;
           case '8':
               lcd.print("Manual 1:ON = 0:OFF ");
-        	 break;
+              break;
           case '0':
               lcd.print("Auto 1:ON = 0:OFF   ");
-        	 break;    
+               break;    
           case '#':
               ComandoCancelado();
               break;  
@@ -530,8 +573,66 @@ void Footer(Client client)
 }
 
 
+void PrintData(){
+    
+  int rtc[7];
+  ds1307get(rtc,true);
+  
+  lcd.setCursor(0, 3);    
+  if (rtc[HORAS] < 10){
+  lcd.print("0");        
+  } 
+  lcd.print(rtc[HORAS],DEC);    
+  lcd.setCursor(2, 3);  
+  lcd.print(":");
+  lcd.setCursor(3, 3);  
+  if (rtc[MINUTOS] < 10){
+  lcd.print("0");        
+  } 
+  lcd.print(rtc[MINUTOS],DEC);  
+  lcd.setCursor(5, 3);  
+  lcd.print(":");               
+  lcd.setCursor(6, 3);  
+  if (rtc[SEGUNDOS] < 10){
+  lcd.print("0");        
+  } 
+  lcd.print(rtc[SEGUNDOS],DEC); 
+  lcd.setCursor(8, 3);  
+  lcd.print("  ");
+  lcd.setCursor(10, 3); 
+  if (rtc[DIAMES] < 10){
+  lcd.print("0");        
+  } 
+  lcd.print(rtc[DIAMES],DEC); 
+  lcd.setCursor(12, 3); 
+  lcd.print("/");   
+  lcd.setCursor(13, 3); 
+  if (rtc[MES] < 10){
+  lcd.print("0");        
+  } 
+  lcd.print(rtc[MES],DEC); 
+  lcd.setCursor(15, 3); 
+  lcd.print("/");   
+  lcd.setCursor(16, 3); 
+  lcd.print(rtc[ANO],DEC); 
+
+}
 
 
+void buzz(int targetPin, long frequency, long length) {
+  long delayValue = 1000000/frequency/2; // calculate the delay value between transitions
+  //// 1 second's worth of microseconds, divided by the frequency, then split in half since
+  //// there are two phases to each cycle
+  long numCycles = frequency * length/ 1000; // calculate the number of cycles for proper timing
+  //// multiply frequency, which is really cycles per second, by the number of seconds to 
+  //// get the total number of cycles to produce
+ for (long i=0; i < numCycles; i++){ // for the calculated length of time...
+    digitalWrite(targetPin,HIGH); // write the buzzer pin high to push out the diaphram
+    delayMicroseconds(delayValue); // wait for the calculated delay value
+    digitalWrite(targetPin,LOW); // write the buzzer pin low to pull back the diaphram
+    delayMicroseconds(delayValue); // wait againf or the calculated delay value
+  }
+}
 
 
  
