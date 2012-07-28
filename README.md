@@ -1,4 +1,4 @@
-# Aquariniumv
+# Aquarinium
 
 Projeto para automacação de aquario
 
@@ -14,14 +14,8 @@ Projeto para automacação de aquario
 - Diagrama de conexões
 ![Conexoes](https://github.com/sergiomokshin/Aquarinium/blob/master/projeto/projeto.png?raw=true)
 
-
-## Funcionalidades
-- Monitoramento de entradas analógicas
-- Monitoramento de 5 entradas digitais
-- Acionamento e monitoramento de 6 saidas digitais
-
-## Interface Web
-![Automation Shield](http://3.bp.blogspot.com/-srpQMLxhF_Y/TzxGtrrYIoI/AAAAAAAAAJU/LJ7bMlHmCok/s640/Interface+Web.png)
+- Conexões
+![Conexoes](https://github.com/sergiomokshin/Aquarinium/blob/master/fotos/circuito.jpg?raw=true)
 
 ## Lista de Materiais para construcao do Shield
 - 1 Arduino MEGA 128
@@ -35,3 +29,11 @@ Projeto para automacação de aquario
 - RTC 
 - Fonte chaveada 12V x 5A
 - 1 Mt Fita de Led RGD
+
+
+- Relé Shield
+![Conexoes](https://github.com/sergiomokshin/Aquarinium/blob/master/pcb_files/rele_shield.png?raw=true)
+
+
+- RGB Driver e Estabilizador de Tensão 5V e 9V
+![Conexoes](https://github.com/sergiomokshin/Aquarinium/blob/master/pcb_files/driver_rgb.png)
