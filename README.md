@@ -1,6 +1,20 @@
 # Aquarinium
 
-Projeto para automacação de aquario
+Projeto para automação de aquario
+
+## Funcionalidades previstas
+- Monitoração remota via WEB de todas as funções 
+- Controle via keypad de de todas as funções
+- Monitor de Temperatura
+- Monitor de PH
+- Monitor de Nível de agua
+- Configuração de timer para acendimento automático de luzes
+- Relógio
+- Dimmer com cores branca, vermelha, azul e verde
+- 1 Saída programável
+- Saída para termostato
+- Saída para filtro / bomba
+
 
 ![Front](https://github.com/sergiomokshin/Aquarinium/blob/master/fotos/front.jpg?raw=true)
 
