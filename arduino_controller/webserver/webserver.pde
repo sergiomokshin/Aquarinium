@@ -1,4 +1,4 @@
-/*
+                                                               /*
   Web  Server
 
  criado em 09/02/2012
@@ -40,10 +40,10 @@ byte colPins[COLS] = {30, 34, 26}; //connect to the column pinouts of the keypad
 #define PIN_RED 8
 #define PIN_GREEN 9
 
-#define PIN_SAIDA_BOMBA 31
-#define PIN_SAIDA_TERMO 33
-#define PIN_SAIDA_AUX1 35
-#define PIN_SAIDA_AUX2 37
+#define PIN_SAIDA_TERMO 31
+#define PIN_SAIDA_BOMBA 33
+#define PIN_SAIDA_LUZ 35
+#define PIN_SAIDA_AUX1 37
 
 #define PIN_SAIDA_BUZZ 41
 
@@ -95,6 +95,8 @@ boolean fimComando;
 boolean recebendoComandoWeb;
 int indiceentrada;
 
+boolean modoAutomatico;
+
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
 void setup()
@@ -111,14 +113,14 @@ void setup()
   pinMode(PIN_SAIDA_BOMBA, OUTPUT);     
   pinMode(PIN_SAIDA_TERMO, OUTPUT);     
   pinMode(PIN_SAIDA_AUX1, OUTPUT);     
-  pinMode(PIN_SAIDA_AUX2, OUTPUT);     
+  pinMode(PIN_SAIDA_LUZ, OUTPUT);     
   pinMode(PIN_SAIDA_BUZZ, OUTPUT);     
   
 
   digitalWrite(PIN_SAIDA_BOMBA, LOW);
   digitalWrite(PIN_SAIDA_TERMO, LOW);
   digitalWrite(PIN_SAIDA_AUX1, LOW);
-  digitalWrite(PIN_SAIDA_AUX2, LOW);
+  digitalWrite(PIN_SAIDA_LUZ, LOW);
   digitalWrite(PIN_SAIDA_BUZZ, LOW);
  
   Serial.begin(9600);
@@ -132,33 +134,89 @@ void setup()
   recebendoComandoWeb = false;
   indiceentrada = 0;
   
+  modoAutomatico = true;
+  
   
   lcd.begin(20, 4);
   lcd.print("AQUARINIUM       A26");
   lcd.setCursor(0, 1);
   lcd.print("Selecione uma opcao ");
   BuzzerConfirma();
-  
-  
-
-
- 
+   
 }
 
 void loop()
 {
-   
+  
   PrintData();
   AguardaComandosTeclado();
-  AguardaComandosWEB(); 
+ // AguardaComandosWEB(); 
   //LerTemperatura();          
+  ModoAutomatico();
+  
 }
+
+
+void ModoAutomatico(){
+
+  lcd.setCursor(17, 0);     
+  if (modoAutomatico == true){
+    
+    digitalWrite(PIN_SAIDA_BOMBA, LOW);
+    digitalWrite(PIN_SAIDA_TERMO, LOW);
+      
+    lcd.print("A");  
+    int rtc[7];
+    ds1307get(rtc,true);
+    if (rtc[HORAS] < 7){      
+      digitalWrite(PIN_SAIDA_AUX1, LOW);
+      digitalWrite(PIN_SAIDA_LUZ, LOW);
+      analogWrite(PIN_RED, 0);
+      analogWrite(PIN_GREEN, 0);
+      analogWrite(PIN_BLUE, 0);                 
+    } 
+    else if (rtc[HORAS] >= 7 && rtc[HORAS] <= 17){      
+      digitalWrite(PIN_SAIDA_LUZ, HIGH);
+      analogWrite(PIN_RED, 0);
+      analogWrite(PIN_GREEN, 0);
+      analogWrite(PIN_BLUE, 0);                 
+    } 
+    else if (rtc[HORAS] > 17 && rtc[HORAS] < 19){      
+      digitalWrite(PIN_SAIDA_LUZ, LOW);
+      analogWrite(PIN_RED, 255);
+      analogWrite(PIN_GREEN, 255);
+      analogWrite(PIN_BLUE, 150);                 
+    } 
+    else if (rtc[HORAS] >= 19 && rtc[HORAS] <= 21){      
+      digitalWrite(PIN_SAIDA_LUZ, LOW);
+      analogWrite(PIN_RED, 0);
+      analogWrite(PIN_GREEN, 0);
+      analogWrite(PIN_BLUE, 255);                 
+    }    
+    else if (rtc[HORAS] > 21 && rtc[HORAS] <= 22){      
+      digitalWrite(PIN_SAIDA_LUZ, LOW);
+      analogWrite(PIN_RED, 0);
+      analogWrite(PIN_GREEN, 0);
+      analogWrite(PIN_BLUE, 50);                 
+    } 
+    else if (rtc[HORAS] > 22){      
+      digitalWrite(PIN_SAIDA_LUZ, LOW);
+      analogWrite(PIN_RED, 0);
+      analogWrite(PIN_GREEN, 0);
+      analogWrite(PIN_BLUE, 0);                 
+    }         
+  } 
+  else{
+     lcd.print("M"); 
+  }        
+}
+
 
 void BuzzerConfirma()
 {
-  buzz(PIN_SAIDA_BUZZ, 3000, 100);        
+  buzz(PIN_SAIDA_BUZZ, 3000, 50);        
   buzz(PIN_SAIDA_BUZZ, 2500, 30);        
-  buzz(PIN_SAIDA_BUZZ, 3500, 500);        
+  buzz(PIN_SAIDA_BUZZ, 3500, 250);        
 }
 
 void BuzzerClica()
@@ -276,7 +334,7 @@ void AguardaComandosTeclado()
               clientline[index] = 'S';
               index++;
               clientline[index] = '2'; 
-              lcd.print("Saida1 1:ON = 0:OFF ");
+              lcd.print("LUZ 1:ON = 0:OFF ");
               break;
           case '7':
               clientline[index] = 'I';         
@@ -284,13 +342,18 @@ void AguardaComandosTeclado()
               clientline[index] = 'S';
               index++;
               clientline[index] = '1';   
-              lcd.print("Saida2 1:ON = 0:OFF ");
+              lcd.print("Saida 1 1:ON = 0:OFF ");
               break;
           case '8':
-              lcd.print("Manual 1:ON = 0:OFF ");
+              clientline[index] = 'I';         
+              index++;
+              clientline[index] = 'M';         
+              index++;
+              clientline[index] = 'A';   
+              lcd.print("Auto 1:ON = 0:OFF ");
               break;
-          case '0':
-              lcd.print("Auto 1:ON = 0:OFF   ");
+          case '9':
+              lcd.print("Não programado ");              
                break;    
           case '#':
               ComandoCancelado();
@@ -410,8 +473,27 @@ void DisparaComando()
     {
        DisparaSaida();      
     }
+    else if (comando[0] == 'M')
+    {
+       DisparaModo();      
+    }
 }
+void DisparaModo(){
 
+  Serial.print("Aqui");
+  Serial.print(comando);
+  
+  char modo = comando[2];
+  Serial.print(modo);
+    
+  if (modo == '0'){
+    modoAutomatico = false;
+  }    
+  else{
+    modoAutomatico = true;
+  }
+  
+}
 
 void DisparaLuz()
 {
@@ -453,17 +535,17 @@ void DisparaSaida()
        
   switch (pin) {
     
-     case '1':
+     case '4':
 	 digitalWrite(PIN_SAIDA_BOMBA, nivel);
 	 break;
-     case '2':
+     case '3':
 	 digitalWrite(PIN_SAIDA_TERMO, nivel);
 	 break;
-     case '3':
-	 digitalWrite(PIN_SAIDA_AUX1, nivel);
+     case '2':
+	 digitalWrite(PIN_SAIDA_LUZ, nivel);
 	 break;
-     case '4':
-	 digitalWrite(PIN_SAIDA_AUX2, nivel);
+     case '1':
+	 digitalWrite(PIN_SAIDA_AUX1, nivel);
 	 break;
      }  
  }
