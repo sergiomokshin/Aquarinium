@@ -4,7 +4,7 @@ Projeto para automação de aquario
 
 ## Funcionalidades previstas
 - Monitoração remota via WEB de todas as funções 
-- Controle via keypad de de todas as funções
+- Controle via keypad de todas as funções
 - Monitor de Temperatura
 - Monitor de PH
 - Monitor de Nível de agua
@@ -14,14 +14,15 @@ Projeto para automação de aquario
 - 1 Saída programável
 - Saída para termostato
 - Saída para filtro / bomba
+- Saída para luz branca
 
 
 ![Front](https://github.com/sergiomokshin/Aquarinium/blob/master/fotos/front.jpg?raw=true)
 
-- Painel: Painel de comando com LCD para visualização de comandos, relógio e teclado para acesso as funções
+- Painel de comando com LCD para visualização de comandos, relógio e teclado para acesso as funções
 ![Painel](https://github.com/sergiomokshin/Aquarinium/blob/master/projeto/frente_controlador_v3.png?raw=true)
 
-- Painel conexões: Fundo painel de comando
+- Fundo painel de comando
 ![PainelFundo](https://github.com/sergiomokshin/Aquarinium/blob/master/projeto/fundo_controlador_v3.png?raw=true)
 
 
@@ -60,6 +61,5 @@ Projeto para automação de aquario
 - Relé Shield
 ![Conexoes](https://github.com/sergiomokshin/Aquarinium/blob/master/pcb_files/rele_shield.png?raw=true)
 
-
 - RGB Driver e Estabilizador de Tensão 5V e 9V
-![Conexoes](https://github.com/sergiomokshin/Aquarinium/blob/master/pcb_files/driver_rgb.png)
+![Conexoes](https://github.com/sergiomokshin/Aquarinium/blob/master/pcb_files/driver_rgb.png?raw=true)
