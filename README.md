@@ -41,14 +41,15 @@ Projeto para automação de aquario
 -- 3 Bornes KRE 2 vias
 -- 4 Bornes KRE 3 vias
 -- 1 placa circuito impresso
-- 1 RGB Driver
+- 1 RGB Driver e Estabilizador de tensão
 -- 3 Transistores TIP120
 -- 3 Bornes KRE 2 vias
 -- 1 Bornes KRE 3 vias
 -- 3 Resistores 220R 1/8w
 -- 1 placa circuito impresso
-- 1 Regulador de Tensão 5V e 
-- 1 Buzzer
+-- 1 LM7805
+-- 1 LM 7809 com dissipador
+- 1 Buzzer 12V
 - 1 KeyPad
 - 1 LCD 20x4
 - RTC 
