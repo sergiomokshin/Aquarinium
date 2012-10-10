@@ -1,0 +1,1 @@
+http://bildr.org/2011/07/ds18b20-arduino/

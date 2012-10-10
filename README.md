@@ -29,7 +29,7 @@ Projeto para automação de aquario
 - Diagrama de conexões
 ![Conexoes](https://github.com/sergiomokshin/Aquarinium/blob/master/projeto/projeto.png?raw=true)
 
-## Lista de Materiais
+## Lista de componentes
 - 1 Arduino MEGA 128
 - 1 Ethernet Shield
 - 1 Relé Shield

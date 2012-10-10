@@ -1,14 +1,11 @@
                                                                /*
-  Web  Server
+Monitor de Aquário
 
- criado em 09/02/2012
- Adaptação WebServer para monitoramento de entradas análogicas, digitais e acionamento de saídas digitais
- por Sérgio de Miranda e Castro Mokshin
+por Sérgio de Miranda e Castro Mokshin
  
-
- Protocolo para acionar saída
- ligar saida 3 IS31
- desligar saida 3 IS30
+Protocolo para acionar saída via WEB
+ligar saida 3 IS31
+desligar saida 3 IS30
  
  ILR1
  ILR0
@@ -24,6 +21,10 @@ LCD D7 pin to digital pin 2
 byte rowPins[ROWS] = {32, 22, 24, 28}; //connect to the row pinouts of the keypad
 byte colPins[COLS] = {30, 34, 26}; //connect to the column pinouts of the keypad
 
+
+Temperatura
+http://bildr.org/2011/07/ds18b20-arduino/
+Pin 6
  
  
  */
@@ -35,6 +36,8 @@ byte colPins[COLS] = {30, 34, 26}; //connect to the column pinouts of the keypad
 #include <LiquidCrystal.h>
 #include <Keypad.h>
 #include <Wire.h>  
+#include <avr/wdt.h>
+#include <OneWire.h>
 
 #define PIN_BLUE 7
 #define PIN_RED 8
@@ -63,16 +66,22 @@ byte colPins[COLS] = {30, 34, 26}; //connect to the column pinouts of the keypad
 #define ANO 6 
 
 
-const byte ROWS = 4; //four rows
-const byte COLS = 3; //three columns
+int DS18S20_Pin = 6; //DS18S20 Signal pin on digital 2
+
+//Temperature chip i/o
+OneWire ds(DS18S20_Pin); // on digital pin 2
+
+
+const byte ROWS = 4; 
+const byte COLS = 3; 
 char keys[ROWS][COLS] = {
   {'1','2','3'},
   {'4','5','6'},
   {'7','8','9'},
   {'#','0','*'}
 };
-byte rowPins[ROWS] = {32, 22, 24, 28}; //connect to the row pinouts of the keypad
-byte colPins[COLS] = {30, 34, 26}; //connect to the column pinouts of the keypad
+byte rowPins[ROWS] = {32, 22, 24, 28}; 
+byte colPins[COLS] = {30, 34, 26}; 
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
@@ -95,12 +104,20 @@ boolean fimComando;
 boolean recebendoComandoWeb;
 int indiceentrada;
 
+int HoraConfirmada;
+int QtdHoraConfirmada;
+
 boolean modoAutomatico;
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
 void setup()
 {
+  
+  HoraConfirmada = 0;
+  QtdHoraConfirmada = 0;
+  
+  wdt_enable(WDTO_8S);
   
   Serial.begin(9600);
   Wire.begin(); 
@@ -138,7 +155,7 @@ void setup()
   
   
   lcd.begin(20, 4);
-  lcd.print("AQUARINIUM       A26");
+  lcd.print("AQUARINIUM   A 26.32");
   lcd.setCursor(0, 1);
   lcd.print("Selecione uma opcao ");
   BuzzerConfirma();
@@ -146,20 +163,99 @@ void setup()
 }
 
 void loop()
-{
-  
+{  
+  wdt_reset(); 
   PrintData();
   AguardaComandosTeclado();
  // AguardaComandosWEB(); 
   //LerTemperatura();          
-  ModoAutomatico();
+  ModoAutomatico(); 
+  Temperatura();
   
 }
 
 
+void Temperatura()
+{
+  
+  float temperature = getTemp();
+  Serial.println(temperature);
+  lcd.setCursor(15, 0);     
+  lcd.print(temperature);
+}
+
+
+float getTemp(){
+ //returns the temperature from one DS18S20 in DEG Celsius
+
+ byte data[12];
+ byte addr[8];
+
+ if ( !ds.search(addr)) {
+   //no more sensors on chain, reset search
+   ds.reset_search();
+   return -1000;
+ }
+
+ if ( OneWire::crc8( addr, 7) != addr[7]) {
+   Serial.println("CRC is not valid!");
+   return -1000;
+ }
+
+ if ( addr[0] != 0x10 && addr[0] != 0x28) {
+   Serial.print("Device is not recognized");
+   return -1000;
+ }
+
+ ds.reset();
+ ds.select(addr);
+ ds.write(0x44,1); // start conversion, with parasite power on at the end
+
+ byte present = ds.reset();
+ ds.select(addr);  
+ ds.write(0xBE); // Read Scratchpad
+
+ 
+ for (int i = 0; i < 9; i++) { // we need 9 bytes
+  data[i] = ds.read();
+ }
+ 
+ ds.reset_search();
+ 
+ byte MSB = data[1];
+ byte LSB = data[0];
+
+ float tempRead = ((MSB << 8) | LSB); //using two's compliment
+ float TemperatureSum = tempRead / 16;
+ 
+ return TemperatureSum;
+ 
+}
+
+int ConfirmaTrocaHora(int hora)
+{ 
+  
+  if(HoraConfirmada == hora)
+  {
+    QtdHoraConfirmada = 0;
+    return hora;
+  }
+  else
+  {
+    QtdHoraConfirmada++;
+  }
+    
+  if(QtdHoraConfirmada>=4)
+  {
+    HoraConfirmada = hora;
+  }
+  
+  return HoraConfirmada;
+}
+
 void ModoAutomatico(){
 
-  lcd.setCursor(17, 0);     
+  lcd.setCursor(13, 0);     
   if (modoAutomatico == true){
     
     digitalWrite(PIN_SAIDA_BOMBA, LOW);
@@ -168,38 +264,41 @@ void ModoAutomatico(){
     lcd.print("A");  
     int rtc[7];
     ds1307get(rtc,true);
-    if (rtc[HORAS] < 7){      
+    
+    int hora = ConfirmaTrocaHora(rtc[HORAS]);
+    
+    if (hora < 6){
       digitalWrite(PIN_SAIDA_AUX1, LOW);
       digitalWrite(PIN_SAIDA_LUZ, LOW);
       analogWrite(PIN_RED, 0);
       analogWrite(PIN_GREEN, 0);
       analogWrite(PIN_BLUE, 0);                 
     } 
-    else if (rtc[HORAS] >= 7 && rtc[HORAS] <= 17){      
+    else if (hora >= 6 && hora <= 19){      
       digitalWrite(PIN_SAIDA_LUZ, HIGH);
       analogWrite(PIN_RED, 0);
       analogWrite(PIN_GREEN, 0);
       analogWrite(PIN_BLUE, 0);                 
     } 
-    else if (rtc[HORAS] > 17 && rtc[HORAS] < 19){      
+    else if (hora >= 20 && hora < 21){      
       digitalWrite(PIN_SAIDA_LUZ, LOW);
       analogWrite(PIN_RED, 255);
       analogWrite(PIN_GREEN, 255);
-      analogWrite(PIN_BLUE, 150);                 
+      analogWrite(PIN_BLUE, 255);                 
     } 
-    else if (rtc[HORAS] >= 19 && rtc[HORAS] <= 21){      
+    else if (hora >= 21 && hora < 22){      
       digitalWrite(PIN_SAIDA_LUZ, LOW);
       analogWrite(PIN_RED, 0);
       analogWrite(PIN_GREEN, 0);
       analogWrite(PIN_BLUE, 255);                 
-    }    
-    else if (rtc[HORAS] > 21 && rtc[HORAS] <= 22){      
+    } 
+    else if (hora >= 22 && hora < 23){      
       digitalWrite(PIN_SAIDA_LUZ, LOW);
       analogWrite(PIN_RED, 0);
       analogWrite(PIN_GREEN, 0);
       analogWrite(PIN_BLUE, 50);                 
     } 
-    else if (rtc[HORAS] > 22){      
+    else if (hora >= 23){      
       digitalWrite(PIN_SAIDA_LUZ, LOW);
       analogWrite(PIN_RED, 0);
       analogWrite(PIN_GREEN, 0);
@@ -238,12 +337,9 @@ void AguardaComandosTeclado()
     lcd.print("Selecione uma funcao"); 
     lcd.setCursor(0, 2); 
     
- 
-   Serial.print("KEY: ");
-   Serial.println(key);
-
+    Serial.print("KEY: ");
+    Serial.println(key);
    
- 
    if( inicioComandoTeclado == true )
    {          
      Serial.println("Executado comando");
@@ -275,8 +371,7 @@ void AguardaComandosTeclado()
        Serial.println(clientline);
        
      }
-     
-     
+         
    }   
    else 
    {             
