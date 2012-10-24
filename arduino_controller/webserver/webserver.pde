@@ -274,7 +274,13 @@ void ModoAutomatico(){
       analogWrite(PIN_GREEN, 0);
       analogWrite(PIN_BLUE, 0);                 
     } 
-    else if (hora >= 6 && hora <= 19){      
+    else if (hora >= 7 && hora <= 12){      
+      digitalWrite(PIN_SAIDA_LUZ, LOW);
+      analogWrite(PIN_RED, 255);
+      analogWrite(PIN_GREEN, 255);
+      analogWrite(PIN_BLUE, 255);                 
+    } 
+    else if (hora >= 13 && hora <= 19){      
       digitalWrite(PIN_SAIDA_LUZ, HIGH);
       analogWrite(PIN_RED, 0);
       analogWrite(PIN_GREEN, 0);

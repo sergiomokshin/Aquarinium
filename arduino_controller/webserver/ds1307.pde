@@ -35,11 +35,11 @@ int rtc_bcd[7]; // Array vai receber os valores do ds1307 em BCD
 void ds1307setup(void){     // Acertar tudo no rel�gio e inici�-lo
   ds1307stop();
   ds1307set(DS1307_SEG,0);  // Altera estes valores se quiser iniciar o RTC com outra hora e data
-  ds1307set(DS1307_MIN,33);
-  ds1307set(DS1307_HR,20);
-  ds1307set(DS1307_DdS,22);
-  ds1307set(DS1307_DMES,22);
-  ds1307set(DS1307_MTH,6);
+  ds1307set(DS1307_MIN,14);
+  ds1307set(DS1307_HR,18);
+  ds1307set(DS1307_DdS,24);
+  ds1307set(DS1307_DMES,24);
+  ds1307set(DS1307_MTH,10);
   ds1307set(DS1307_ANO,12);
   ds1307start();
 }
