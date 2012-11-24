@@ -111,21 +111,32 @@ boolean modoAutomatico;
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
+//PH
+int indexPH;
+char clientPH[3];
+String inputstring = "C";                                                       
+String sensorstring = "";                                                      
+boolean input_stringcomplete = true;                                          
+boolean sensor_stringcomplete = false;                                         
+
+
 void setup()
 {
+
+  //ds1307setup();
   
   HoraConfirmada = 0;
   QtdHoraConfirmada = 0;
   
   wdt_enable(WDTO_8S);
-  
-  Serial.begin(9600);
+
+  Serial.begin(38400);
   Wire.begin(); 
-  //ds1307setup();
-  
+   
+ Serial3.begin(38400);                                                     
+       
   pinMode(PIN_ENTRADA_NIVEL_B, INPUT);
   pinMode(PIN_ENTRADA_NIVEL_A, INPUT);
- // pinMode(PIN_ENTRADA_TEMP, INPUT);
   
   pinMode(PIN_SAIDA_BOMBA, OUTPUT);     
   pinMode(PIN_SAIDA_TERMO, OUTPUT);     
@@ -133,14 +144,13 @@ void setup()
   pinMode(PIN_SAIDA_LUZ, OUTPUT);     
   pinMode(PIN_SAIDA_BUZZ, OUTPUT);     
   
-
   digitalWrite(PIN_SAIDA_BOMBA, LOW);
   digitalWrite(PIN_SAIDA_TERMO, LOW);
   digitalWrite(PIN_SAIDA_AUX1, LOW);
   digitalWrite(PIN_SAIDA_LUZ, LOW);
   digitalWrite(PIN_SAIDA_BUZZ, LOW);
  
-  Serial.begin(9600);
+ 
   Ethernet.begin(mac, ip);
   server.begin();
   inicioComando1 = false;
@@ -155,10 +165,11 @@ void setup()
   
   
   lcd.begin(20, 4);
-  lcd.print("AQUARINIUM   A 26.32");
+  lcd.print("PH           A 26.32");
   lcd.setCursor(0, 1);
-  lcd.print("Selecione uma opcao ");
+  lcd.print("Aquadroid           ");
   BuzzerConfirma();
+  indexPH = 0;
    
 }
 
@@ -167,15 +178,95 @@ void loop()
   wdt_reset(); 
   PrintData();
   AguardaComandosTeclado();
- // AguardaComandosWEB(); 
-  //LerTemperatura();          
+//AguardaComandosWEB();   
   ModoAutomatico(); 
-  Temperatura();
-  
+  LeituraTemperatura();
+  LeituraPH();    
 }
 
 
-void Temperatura()
+void LeituraPH() {    
+  
+     //ConfiguraPH();
+     //Serial3.print("C\r");
+     serialEvent3();
+     
+ if (sensor_stringcomplete){
+      Serial.println(clientPH);
+      delay(50);
+      
+      lcd.setCursor(3, 0);
+      lcd.print(clientPH);
+      
+      lcd.setCursor(7, 0);
+      lcd.print("    ");
+      
+      indexPH = 0;
+      sensorstring = "";                                                       
+      sensor_stringcomplete = false;                                           
+      Serial.println("PH LIDO");
+      }
+      
+}  
+
+ void ConfiguraPH() {                
+   
+   char inchar = (char)Serial.read();
+     
+   if(inchar == 'R') {
+      Serial3.print("R\r");
+   }
+   
+  if(inchar == 'C') {
+      Serial3.print("C\r");
+   }
+   
+   if(inchar == 'E') {
+      Serial3.print("E\r");
+   }
+   
+    if(inchar == 'I') {
+      Serial3.print("I\r");
+   }
+   
+    if(inchar == 'S') {
+      Serial3.print("S\r");
+   }
+   
+    if(inchar == 'F') {
+      Serial3.print("F\r");
+   }
+   
+    if(inchar == 'T') {
+      Serial3.print("T\r");
+   }
+   
+   
+   
+  }  
+
+
+ void serialEvent3(){
+   
+      char c = (char)Serial3.read();  
+      
+      if(c == '\r'){
+        sensor_stringcomplete = true;        
+      } 
+      else      
+      {
+        if(validateNumber(c)){
+          clientPH[indexPH] = c;
+          indexPH++;          
+        }
+      }              
+ }
+bool validateNumber(char caracter) {  
+  return (caracter == '0' || caracter == '1' || caracter == '2' || caracter == '3' || caracter == '4' || caracter == '5' || caracter == '6' || caracter == '7' || caracter == '8' || caracter == '9' || caracter == '.'); 
+}
+ 
+
+void LeituraTemperatura()
 {
   
   float temperature = getTemp();
@@ -452,6 +543,7 @@ void AguardaComandosTeclado()
               index++;
               clientline[index] = 'A';   
               lcd.print("Auto 1:ON = 0:OFF ");
+              Serial3.print("C\r");
               break;
           case '9':
               lcd.print("Não programado ");              
